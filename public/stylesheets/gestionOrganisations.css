@@ -1,0 +1,68 @@
+.element{
+    margin-left: 10px;
+    margin-top: 3px;
+}
+.level{
+    margin-left: 60px;
+}
+
+.typeGroupement{
+    /*position: relative;*/
+    /*top: 5px;*/
+    font-size: 0.7em;
+    color: gray;
+}
+.groupement{
+    background: white;
+    border: solid 1px gray;
+    border-radius: 4px;
+    min-width: 150px;
+    padding: 2px 5px 2px 5px;
+    /*height: 20px;*/
+    /*line-height: 20px;*/
+    text-align: center;
+    display: inline-block;
+    font-size: small;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    outline: 0;
+}
+.groupement:hover{
+    cursor: pointer;
+}
+.espece{
+    background: lightsteelblue;
+    border: solid 1px gray;
+    border-radius: 4px;
+    min-width: 150px;
+    padding: 2px 5px 2px 5px;
+    /*height: 20px;*/
+    /*line-height: 20px;*/
+    text-align: center;
+    display: inline-block;
+    font-size: small;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    outline: 0;
+}
+.espece:hover{
+    cursor: pointer;
+}
+.empty{
+    font-size: 0.7em;
+    color: gray;
+}
+.container{
+    border-left: solid 1px gray;
+    /*margin-bottom: 10px;*/
+}

@@ -1,0 +1,112 @@
+
+#contenu { width:1000px; background-color:grey; border: 2px solid black;
+}
+
+#titre { text-align:center; 
+}
+
+#date { width:500px; float:left; height: 300px;
+}
+
+#localisation {width:500px; height: 300px; float:left;
+}
+
+#especes {width:1000px;
+}
+
+#bas_de_page {
+}
+
+h1{color:white;}
+
+table{
+	border-color: green;
+	border-width: 0 0 1px 1px;
+	border-style: solid;
+	border-spacing: 0px;
+	font-size: small;
+}
+tr{
+	background-color:white;
+	color:darkgreen;
+}
+td{
+	border-color: green;
+	border-width: 1px 1px 0 0;
+	border-style: solid;
+	color: darkgreen;
+	padding: 5px;
+}
+th{
+	border-color: green;
+	border-width: 1px 1px 0 0;
+	border-style: solid;
+	background-color:yellowgreen;
+	color:white;
+	padding: 5px;
+}
+
+body{
+	color:black;
+	background-color: #C8C8C8 ;
+	background: url(/assets/images/paper_texture_04.png) no-repeat center center fixed;
+	-webkit-background-size: cover;
+	-moz-background-size: cover;
+	-o-background-size: cover;
+	background-size: cover;
+}
+
+ul{
+	list-style-type:none;
+	margin:0;
+	padding:0;
+	overflow:hidden;
+}
+li{
+	float:left;
+	display:block;
+	width:inherit;
+}
+
+h1 {
+	color:black;
+}
+
+table.gestionDesTemoinsPassifs{
+	font-size:0.6em;
+}
+input.nouveauTemoinInput{
+	width:90px;
+}
+input.nouveauTemoinCours{
+	width:60px;
+}
+input.nouveauTemoinCivilite{
+	width:20px;
+}
+
+body {
+	background-color: #EDEDED;
+	font-family: sans-serif;
+	font-size: medium;
+}
+
+/*button{*/
+	/*padding: 5px;*/
+	/*width: 200px;*/
+	/*border: none;*/
+	/*background: cornflowerblue;*/
+	/*background: yellowgreen;*/
+	/*transition: border 0.3s;*/
+	/*color: white;*/
+/*}*/
+
+/*button:hover{*/
+	/*padding: 5px;*/
+	/*width: 200px;*/
+	/*border: solid 1px white;*/
+	/*background: cornflowerblue;*/
+	/*background: yellowgreen;*/
+	/*transition: border 0.3s;*/
+	/*color: white;*/
+/*}*/
