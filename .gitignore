@@ -1,0 +1,45 @@
+/app/functions/credentials/Credentials.java
+
+############# Fichiers temporaires et build de play 2 #############
+
+/logs
+/project/project
+/project/target
+/target
+/tmp
+/.history
+/dist
+/.settings
+
+########## Fichiers systèmes #########
+# Mac
+.DS_Store
+
+############## IDE ################
+
+# IntelliJ
+/.idea
+/*.iml
+/out
+/.idea_modules
+/.classpath
+/.project
+/RUNNING_PID
+
+# Fichiers temporaires de gedit
+*~
+
+/.target
+/bin
+
+######### Les fichiers générés par les tests #########
+
+listeEspeces
+listeMembres.js
+motsDePasse.txt
+*.xls
+
+######## scripts lancement play #########
+
+*.command
+
