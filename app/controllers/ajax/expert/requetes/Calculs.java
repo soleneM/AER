@@ -94,64 +94,51 @@ public class Calculs extends Controller {
 	 * Calcule la liste des témoignages par espèces sur une période
 	 * @return
 	 */
-	private static ResultSet calculeListeDesTemoignages(Map<String,String> info) throws ParseException, SQLException {
+	private static ResultSet calculeListeDesTemoignages(Map<String,String> info, int tailleUTM) throws ParseException, SQLException {
 		DataSource ds = DB.getDataSource();
 		Connection connection = ds.getConnection();
 		PreparedStatement listeDesTemoignages;
 
-		String ordre = null;
 		ArrayList<Object> listeParams = new ArrayList<Object>();
 		String statement = "";
-		if ((info.get("espece") != null) && (! info.get("espece").equals(""))) {
-			statement = "SELECT espece.espece_nom as espece_nom, membre.membre_nom as membre_nom, utms.utm, utms.Maille20x20, utms.Maille50x50, utms.Maille100x100, f.fiche_Date"
-				+ " FROM observation obs"
+		statement = "SELECT espece.espece_nom as espece_nom, membre.membre_nom as membre_nom, ";
+		// utilisation d'un switch au cas où on voudrait utiliser uniquement les mailles 50x50, ou 100x100
+		switch (tailleUTM) {
+			case 20:
+				statement += "utms.maille20x20, f.fiche_Date";
+				break;
+			default:
+				statement += "utms.utm, utms.maille20x20, utms.maille50x50, utms.maille100x100, f.fiche_Date";
+				break;	
+		}
+		statement += " FROM observation obs"
 				+ " INNER JOIN fiche f ON obs.observation_fiche_fiche_id = f.fiche_id"
 				+ " INNER JOIN espece ON obs.observation_espece_espece_id = espece.espece_id"
 				+ " INNER JOIN fiche_has_membre fhm ON fhm.fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN membre ON fhm.membre_membre_id = membre.membre_id"
-				+ " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
+				+ " INNER JOIN membre ON fhm.membre_membre_id = membre.membre_id";
+		
+		if ((info.get("espece") != null) && (! info.get("espece").equals(""))) {
+			statement += " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
 				+ " WHERE obs.observation_validee = 1"
 				+ " AND espece.espece_id=?";
-			listeParams.add(info.get("espece"));
-			ordre = "espece.espece_nom, utms.utm, f.fiche_Date";
+			listeParams.add(info.get("espece"));			
 		} else if ((info.get("sous_groupe") != null) && (! info.get("sous_groupe").equals(""))) {
-			statement = "SELECT espece.espece_nom as espece_nom, membre.membre_nom as membre_nom, utms.utm, utms.Maille20x20, utms.Maille50x50, utms.Maille100x100, f.fiche_Date"
-				+ " FROM observation obs"
-				+ " INNER JOIN fiche f ON obs.observation_fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN espece ON obs.observation_espece_espece_id = espece.espece_id"
-				+ " INNER JOIN fiche_has_membre fhm ON fhm.fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN membre ON fhm.membre_membre_id = membre.membre_id"
-				+ " INNER JOIN espece_is_in_groupement_local ON espece.espece_id = espece_is_in_groupement_local.espece_espece_id"
+			statement += " INNER JOIN espece_is_in_groupement_local ON espece.espece_id = espece_is_in_groupement_local.espece_espece_id"
 				+ " INNER JOIN groupe ON espece_is_in_groupement_local.groupe_groupe_id = groupe.groupe_id"
 				+ " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
 				+ " WHERE obs.observation_validee = 1"
 				+ " AND groupe.groupe_id=?";
 			listeParams.add(info.get("sous_groupe"));
-			ordre = "espece.espece_nom, utms.utm, f.fiche_Date";
 		} else if ((info.get("groupe") != null) && (! info.get("groupe").equals(""))) {
-			statement = "SELECT espece.espece_nom as espece_nom, membre.membre_nom as membre_nom, utms.utm, utms.Maille20x20, utms.Maille50x50, utms.Maille100x100, f.fiche_Date"
-				+ " FROM observation obs"
-				+ " INNER JOIN fiche f ON obs.observation_fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN espece ON obs.observation_espece_espece_id = espece.espece_id"
-				+ " INNER JOIN fiche_has_membre fhm ON fhm.fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN membre ON fhm.membre_membre_id = membre.membre_id"
-				+ " INNER JOIN espece_is_in_groupement_local ON espece.espece_id = espece_is_in_groupement_local.espece_espece_id"
+			statement += " INNER JOIN espece_is_in_groupement_local ON espece.espece_id = espece_is_in_groupement_local.espece_espece_id"
 				+ " INNER JOIN groupe ON espece_is_in_groupement_local.groupe_groupe_id = groupe.groupe_id"
 				+ " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
 				+ " WHERE obs.observation_validee = 1"
 				+ " AND groupe.groupe_id=?";
 			listeParams.add(info.get("groupe"));
-			ordre = "espece.espece_nom, utms.utm, f.fiche_Date";
 		} else {
-			statement = "SELECT espece.espece_nom as espece_nom, membre.membre_nom as membre_nom, utms.utm, utms.Maille20x20, utms.Maille50x50, utms.Maille100x100, f.fiche_Date"
-				+ " FROM observation obs"
-				+ " INNER JOIN fiche f ON obs.observation_fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN espece ON obs.observation_espece_espece_id = espece.espece_id"
-				+ " INNER JOIN fiche_has_membre fhm ON fhm.fiche_fiche_id = f.fiche_id"
-				+ " INNER JOIN membre ON fhm.membre_membre_id = membre.membre_id"
-				+ " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
+			statement += " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
 				+ " WHERE obs.observation_validee = 1";
-			ordre = "espece.espece_nom, utms.utm, f.fiche_Date";
 		}
 
 		if (! info.get("periode").equals("all")) {
@@ -162,9 +149,17 @@ public class Calculs extends Controller {
 			listeParams.add(new java.sql.Date(date1.getTimeInMillis()));
 			listeParams.add(new java.sql.Date(date2.getTimeInMillis()));
 		}
-		if (ordre != null) {
-			statement += " ORDER BY "+ordre;
+		
+		String ordre = null;
+		switch (tailleUTM) {
+			case 20:
+				ordre = "espece.espece_nom, utms.maille20x20, f.fiche_Date";
+				break;
+			default:
+				ordre = "espece.espece_nom, utms.utm, f.fiche_Date";
+				break;	
 		}
+		statement += " ORDER BY "+ordre;
 		info.put("maxtemoignages", "20");
 
 		listeDesTemoignages = connection.prepareStatement(statement); 
@@ -295,8 +290,8 @@ public class Calculs extends Controller {
 					// Pour une période donnée, et par espèce, liste des premiers témoignages 
 					// de chaque maille (maille, index, date, témoin(s)) avec carte du nombre 
 					// de témoignages par mailles
-					ResultSet listeTemoignages = calculeListeDesTemoignages(info);
-					excelData = ListeExportExcel.listeDesTemoignages(info,listeTemoignages);
+					ResultSet listeTemoignages = calculeListeDesTemoignages(info,0);
+					excelData = ListeExportExcel.listeDesTemoignages(info,listeTemoignages,0);
 					message = buildMessage("Carte par espèces", info);
 				break;
 
@@ -304,6 +299,10 @@ public class Calculs extends Controller {
 					// Pour une période donnée, et par espèce, liste des premiers témoignages
 					// de chaque maille UTM 20km X 20km (maille, index, date, témoin(s)) avec
 					// carte du nombre de témoignages par mailles
+					ResultSet listeTemoignagesUTM20 = calculeListeDesTemoignages(info,20);
+					excelData = ListeExportExcel.listeDesTemoignages(info,listeTemoignagesUTM20,20);
+					message = buildMessage("Carte 20x20 par espèces", info);
+
 				break;
 
 				case 30 : // Carte somme

@@ -189,7 +189,7 @@ public class ListeExportExcel extends Excel{
 		return theFile;
 	}
 	
-	public static ListeExportExcel listeDesTemoignages(Map<String,String> info, ResultSet listeDesTemoignages) throws IOException, SQLException{
+	public static ListeExportExcel listeDesTemoignages(Map<String,String> info, ResultSet listeDesTemoignages, int tailleUTM) throws IOException, SQLException{
 		ListeExportExcel theFile = new ListeExportExcel();
 		Sheet sheet = theFile.wb.createSheet("Liste des témoignages");
 
@@ -216,8 +216,15 @@ public class ListeExportExcel extends Excel{
 		Row rowHead = sheet.createRow(ligne);
 		rowHead.createCell(0).setCellValue("Espèce");
 		rowHead.createCell(1).setCellValue("Maille");
-		rowHead.createCell(5).setCellValue("Témoin");
-		rowHead.createCell(6).setCellValue("Date");
+		// décalage selon le nombre de colonnes pour les mailles
+		// il faut 4 colonnes si on affiche les mailles UTM, UTM 20x20, UTM 50x50 et UTM 100x100
+		// il faut une seule colonne si on affiche un seul type de maille
+		int nbColUTM = 4; // valeur par défaut
+		if (tailleUTM == 20) {
+			nbColUTM = 1;
+		}
+		rowHead.createCell(1+nbColUTM).setCellValue("Témoin");
+		rowHead.createCell(2+nbColUTM).setCellValue("Date");
 		ligne++;
 		String lastEspece = null;
 		String lastMaille = null;
@@ -225,7 +232,15 @@ public class ListeExportExcel extends Excel{
 		int nbTemoignages = 0;
 		while (listeDesTemoignages.next()){
 			String espece = listeDesTemoignages.getString("Espece_nom");
-			String maille = listeDesTemoignages.getString("UTM");
+			String maille = "";
+			switch (tailleUTM) {
+				case 20:
+					maille = listeDesTemoignages.getString("Maille20x20");
+					break;
+				default:
+					maille = listeDesTemoignages.getString("UTM");
+					break;	
+			}
 
 			if ((realLastMaille == null) || (! realLastMaille.equals(maille))) {
 				nbTemoignages = 0;
@@ -243,17 +258,17 @@ public class ListeExportExcel extends Excel{
 				}
 				if ((lastMaille == null) || (! lastMaille.equals(maille))) {
 					row.createCell(1).setCellValue(maille);
-					row.createCell(2).setCellValue(listeDesTemoignages.getString("Maille20x20"));
-					row.createCell(3).setCellValue(listeDesTemoignages.getString("Maille50x50"));
-					row.createCell(4).setCellValue(listeDesTemoignages.getString("Maille100x100"));
+					if (tailleUTM != 20) {
+						row.createCell(3).setCellValue(listeDesTemoignages.getString("Maille50x50"));
+						row.createCell(4).setCellValue(listeDesTemoignages.getString("Maille100x100"));
+					}
 				} else {
-					row.createCell(1).setCellValue("");
-					row.createCell(2).setCellValue("");
-					row.createCell(3).setCellValue("");
-					row.createCell(4).setCellValue("");
+					for (int i = 1; i<1+nbColUTM; i++) {
+						row.createCell(i).setCellValue("");
+					}
 				}
-				row.createCell(5).setCellValue(listeDesTemoignages.getString("Membre_nom"));
-				row.createCell(6).setCellValue(date_format.format(listeDesTemoignages.getDate("Fiche_Date")));
+				row.createCell(1+nbColUTM).setCellValue(listeDesTemoignages.getString("Membre_nom"));
+				row.createCell(2+nbColUTM).setCellValue(date_format.format(listeDesTemoignages.getDate("Fiche_Date")));
 				ligne++;
 			
 				if (ligne%LIGNES==(LIGNES-2)){
@@ -267,8 +282,8 @@ public class ListeExportExcel extends Excel{
 					row = sheet.createRow(ligne);
 					row.createCell(0).setCellValue("Espèce");
 					rowHead.createCell(1).setCellValue("Maille");
-					row.createCell(5).setCellValue("Témoin");
-					rowHead.createCell(6).setCellValue("Date");
+					row.createCell(1+nbColUTM).setCellValue("Témoin");
+					rowHead.createCell(2+nbColUTM).setCellValue("Date");
 					ligne++;
 				
 					lastEspece = null;
@@ -284,11 +299,9 @@ public class ListeExportExcel extends Excel{
 		}
 		theFile.piedDePage(page);
 		sheet.setColumnWidth(0, 7937);
-		sheet.autoSizeColumn(1);
-		sheet.setColumnWidth(2, 256);
-		sheet.setColumnWidth(3,7937);
-		sheet.autoSizeColumn(4);
-		
+		for (int i = 1; i<3+nbColUTM; i++) {
+			sheet.autoSizeColumn(i);
+		}
 		return theFile;
 	}
 	
