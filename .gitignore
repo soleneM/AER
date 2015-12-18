@@ -1,5 +1,17 @@
-############ Fichier Credentials #################
 app/functions/credentials/Credentials.java
+Docs/
+LICENSE
+README.md
+build.sbt
+conf/
+downloads/
+images/
+play_start
+play_stop
+project/
+test/
+utils/
+
 
 ############# Fichiers temporaires et build de play 2 #############
 
