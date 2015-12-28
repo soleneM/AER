@@ -305,6 +305,86 @@ public class ListeExportExcel extends Excel{
 		return theFile;
 	}
 	
+	public static ListeExportExcel sommeEspeces(Map<String,String> info, ResultSet sommeEspeces, int tailleUTM) throws IOException, SQLException{
+		ListeExportExcel theFile = new ListeExportExcel();
+		Sheet sheet = theFile.wb.createSheet("Somme des espèces");
+
+		String titre = "Somme des espèces"+crLf;
+		if (! info.get("periode").equals("all")) {
+			String date1 = info.get("jour1")+"/"+info.get("mois1")+"/"+info.get("annee1");
+			String date2 = info.get("jour2")+"/"+info.get("mois2")+"/"+info.get("annee2");
+			titre+=" du "+date1+" au "+date2;
+		}
+		if (! info.get("sous_groupe").equals("")) {
+			titre+=" pour le sous-groupe "+info.get("sous_groupe");
+		} else if (! info.get("groupe").equals("")) {
+			titre+=" pour le groupe "+info.get("groupe");
+		}
+		
+		int page = 0;
+		int ligne = 7;
+		theFile.collerLogoEtTitre(page,titre);
+		Row rowHead = sheet.createRow(ligne);
+		rowHead.createCell(0).setCellValue("Groupe");
+		rowHead.createCell(1).setCellValue("Maille");
+		rowHead.createCell(2).setCellValue("Nb d'espèces");
+		ligne++;
+		String lastGroupe = null;
+		String lastMaille = null;
+		while (sommeEspeces.next()){
+			String groupe = sommeEspeces.getString("groupe.groupe_nom");
+			String maille = "";
+			switch (tailleUTM) {
+				case 20:
+					maille = sommeEspeces.getString("utms.maille20x20");
+					break;
+				default:
+					maille = sommeEspeces.getString("utms.utm");
+					break;	
+			}
+
+				Row row = sheet.createRow(ligne);
+				if ((lastGroupe == null) || (! lastGroupe.equals(groupe))) {
+					row.createCell(0).setCellValue(groupe);
+					lastMaille = null;
+				} else {
+					row.createCell(0).setCellValue("");
+				}
+				if ((lastMaille == null) || (! lastMaille.equals(maille))) {
+					row.createCell(1).setCellValue(maille);
+				}
+				row.createCell(2).setCellValue(sommeEspeces.getString("nbespeces"));
+				ligne++;
+			
+				if (ligne%LIGNES==(LIGNES-2)){
+					//On écrit le pied de page
+					theFile.piedDePage(page);
+				
+					//On fait une nouvelle page
+					ligne+=9;
+					page++;
+					theFile.collerLogoEtTitre(page, titre);
+					row = sheet.createRow(ligne);
+					row.createCell(0).setCellValue("Groupe");
+					rowHead.createCell(1).setCellValue("Maille");
+					row.createCell(2).setCellValue("Nb d'espèces");
+					ligne++;
+				
+					lastGroupe = null;
+					lastMaille = null;
+				} else {
+					lastGroupe = groupe;
+					lastMaille = maille;
+				}
+		}
+		theFile.piedDePage(page);
+		sheet.setColumnWidth(0, 7937);
+		for (int i = 1; i<4; i++) {
+			sheet.autoSizeColumn(i);
+		}
+		return theFile;
+	}
+	
 	public static ListeExportExcel observationsValidesExcel(Integer espece_id, String membre_nom, String orderBy, String dir, Integer groupe_id) throws ParseException, IOException {
 		ListeExportExcel theFile = new ListeExportExcel();
 		Sheet sheet = theFile.wb.createSheet("Liste d'observations");
