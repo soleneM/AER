@@ -28,6 +28,9 @@ import java.util.Map;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.sql.DataSource;
+
+import org.apache.poi.ss.usermodel.Row;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -35,12 +38,13 @@ import java.sql.PreparedStatement;
 import controllers.ajax.expert.requetes.nvCalculs.ListeDesTemoins;
 import controllers.ajax.expert.requetes.nvCalculs.SommeEspeces;
 import controllers.ajax.expert.requetes.nvCalculs.ListeDesEspeces;
+import controllers.ajax.expert.requetes.calculs.CarteSomme;
 import controllers.ajax.expert.requetes.nvCalculs.CarnetDeChasse;
 import controllers.ajax.expert.requetes.nvCalculs.EspecesParMaille;
 import controllers.ajax.expert.requetes.nvCalculs.EspecesParCommune;
 import controllers.ajax.expert.requetes.nvCalculs.EspecesParDepartement;
 import controllers.ajax.expert.requetes.nvCalculs.Historique;
-
+import functions.cartes.Carte;
 import functions.excels.Excel;
 import functions.excels.ListeExportExcel;
 
@@ -170,6 +174,97 @@ public class Calculs extends Controller {
 		return rs;
 	}
 	
+	private static HashMap<UTMS,Integer> calculeCarteTemoignages(Map<String,String> info, int tailleUTM) throws ParseException, SQLException {
+		DataSource ds = DB.getDataSource();
+		Connection connection = ds.getConnection();
+		PreparedStatement nbDeTemoignages;
+
+		ArrayList<Object> listeParams = new ArrayList<Object>();
+		String statement = "";
+		// utilisation d'un switch au cas où on voudrait utiliser uniquement les mailles 50x50, ou 100x100
+		switch (tailleUTM) {
+			case 20:
+				statement += "SELECT utms.maille20x20, COUNT(f.fiche_Date) AS nbtem";
+				break;
+			default:
+				statement += "SELECT utms.utm, COUNT(f.fiche_Date) AS nbtem";
+				break;	
+		}
+		statement += " FROM observation obs"
+				+ " INNER JOIN fiche f ON obs.observation_fiche_fiche_id = f.fiche_id"
+				+ " INNER JOIN espece ON obs.observation_espece_espece_id = espece.espece_id"
+				+ " INNER JOIN fiche_has_membre fhm ON fhm.fiche_fiche_id = f.fiche_id"
+				+ " INNER JOIN membre ON fhm.membre_membre_id = membre.membre_id";
+		
+		if ((info.get("espece") != null) && (! info.get("espece").equals(""))) {
+			statement += " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
+				+ " WHERE obs.observation_validee = 1"
+				+ " AND espece.espece_id=?";
+			listeParams.add(info.get("espece"));			
+		} else if ((info.get("sous_groupe") != null) && (! info.get("sous_groupe").equals(""))) {
+			statement += " INNER JOIN espece_is_in_groupement_local ON espece.espece_id = espece_is_in_groupement_local.espece_espece_id"
+				+ " INNER JOIN groupe ON espece_is_in_groupement_local.groupe_groupe_id = groupe.groupe_id"
+				+ " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
+				+ " WHERE obs.observation_validee = 1"
+				+ " AND groupe.groupe_id=?";
+			listeParams.add(info.get("sous_groupe"));
+		} else if ((info.get("groupe") != null) && (! info.get("groupe").equals(""))) {
+			statement += " INNER JOIN espece_is_in_groupement_local ON espece.espece_id = espece_is_in_groupement_local.espece_espece_id"
+				+ " INNER JOIN groupe ON espece_is_in_groupement_local.groupe_groupe_id = groupe.groupe_id"
+				+ " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
+				+ " WHERE obs.observation_validee = 1"
+				+ " AND groupe.groupe_id=?";
+			listeParams.add(info.get("groupe"));
+		} else {
+			statement += " INNER JOIN utms ON utms.utm = f.fiche_utm_utm"
+				+ " WHERE obs.observation_validee = 1";
+		}
+
+		if (! info.get("periode").equals("all")) {
+			statement += " AND f.fiche_date BETWEEN ? AND ?";
+
+			Calendar date1 = Calculs.getDataDate1(info);
+			Calendar date2 = Calculs.getDataDate2(info);
+			listeParams.add(new java.sql.Date(date1.getTimeInMillis()));
+			listeParams.add(new java.sql.Date(date2.getTimeInMillis()));
+		}
+		
+		String groupement = null;
+		switch (tailleUTM) {
+			case 20:
+				groupement = "utms.maille20x20";
+				break;
+			default:
+				groupement = "utms.utm";
+				break;	
+		}
+		statement += " GROUP BY "+groupement;
+
+		nbDeTemoignages = connection.prepareStatement(statement); 
+		setParams(nbDeTemoignages, listeParams);
+		ResultSet rs = nbDeTemoignages.executeQuery();
+		
+		HashMap<UTMS,Integer> carteData = new HashMap<>();
+		while (rs.next()){
+			String maille = "";
+			UTMS mailleUTM = new UTMS();
+			switch (tailleUTM) {
+				case 20:
+					maille = rs.getString("utms.maille20x20");
+					mailleUTM.maille20x20 = maille;
+					break;
+				default:
+					maille = rs.getString("utms.utm");
+					mailleUTM.utm = maille;
+					break;	
+			}
+			Integer nbTemoignages = rs.getInt("nbtem");
+			carteData.put(mailleUTM,nbTemoignages);
+		}
+		return carteData;
+		
+	}
+	
 	/**
 	 * Calcule la somme des espèces témoignées par maille sur une période pour un groupe ou sous-groupe défini
 	 * @param info
@@ -238,6 +333,84 @@ public class Calculs extends Controller {
 		ResultSet rs = sommeEspeces.executeQuery();
 		
 		return rs;
+	}
+	
+	private static HashMap<UTMS,Integer> calculeCarteSommeEspeces(Map<String,String> info, int tailleUTM) throws ParseException, SQLException {
+		DataSource ds = DB.getDataSource();
+		Connection connection = ds.getConnection();
+		PreparedStatement sommeEspeces;
+
+		ArrayList<Object> listeParams = new ArrayList<Object>();
+		String statement = "";
+		
+		switch (tailleUTM) {
+			case 20:
+				statement += "SELECT utms.maille20x20";
+			break;
+			default:
+				statement += "SELECT utms.utm";
+			break;
+		}
+		statement += ", COUNT(espece.espece_id) as nbespeces"
+				+ " FROM groupe " 
+				+ " INNER JOIN espece_is_in_groupement_local ON (groupe.groupe_id = espece_is_in_groupement_local.groupe_groupe_id)"
+				+ " INNER JOIN espece ON (espece_is_in_groupement_local.espece_espece_id = espece.espece_id)"
+				+ " INNER JOIN observation ON (espece.espece_id = observation.observation_espece_espece_id)"
+				+ " INNER JOIN fiche ON (observation.observation_fiche_fiche_id = fiche.fiche_id)"
+				+ " INNER JOIN utms ON (fiche.fiche_utm_utm = utms.utm)"
+				+ " WHERE observation.observation_validee = 1";
+		
+		if ((info.get("sous_groupe") != null) && (! info.get("sous_groupe").equals(""))) {
+			statement += " AND groupe.groupe_id = ?";
+			listeParams.add(info.get("sous_groupe"));
+		} else if ((info.get("groupe") != null) && (! info.get("groupe").equals(""))) {
+			statement += " AND groupe.groupe_id = ?";
+			listeParams.add(info.get("groupe"));
+		}
+		
+		if (! info.get("periode").equals("all")) {
+			statement += " AND fiche.fiche_date BETWEEN ? AND ?";
+
+			Calendar date1 = Calculs.getDataDate1(info);
+			Calendar date2 = Calculs.getDataDate2(info);
+			listeParams.add(new java.sql.Date(date1.getTimeInMillis()));
+			listeParams.add(new java.sql.Date(date2.getTimeInMillis()));
+		}
+		
+		String groupement = null;
+		switch (tailleUTM) {
+			case 20:
+				groupement = "utms.maille20x20";
+				break;
+			default:
+				groupement = "utms.utm";
+				break;	
+		}
+		statement += " GROUP BY "+groupement;
+		
+		sommeEspeces = connection.prepareStatement(statement); 
+		setParams(sommeEspeces, listeParams);
+		ResultSet rs = sommeEspeces.executeQuery();
+		
+		
+		HashMap<UTMS,Integer> carteData = new HashMap<>();
+		while (rs.next()){
+			String maille = "";
+			UTMS mailleUTM = new UTMS();
+			switch (tailleUTM) {
+				case 20:
+					maille = rs.getString("utms.maille20x20");
+					mailleUTM.maille20x20 = maille;
+					break;
+				default:
+					maille = rs.getString("utms.utm");
+					mailleUTM.utm = maille;
+					break;	
+			}
+			Integer nbEspeces = rs.getInt("nbespeces");
+			carteData.put(mailleUTM,nbEspeces);
+		}
+		return carteData;
 	}
 
 	/**
@@ -350,6 +523,8 @@ public class Calculs extends Controller {
 		Map<String,String> info = getData();
 		
 		Excel excelData = null;
+		HashMap<UTMS,Integer> carteData = null;
+		Carte carteImage = null;
 		String message = new String();
 		if ((info.get("typeDonnees") != null) && (!info.get("typeDonnees").equals("null"))) {
 
@@ -363,7 +538,11 @@ public class Calculs extends Controller {
 					// de témoignages par mailles
 					ResultSet listeTemoignages = calculeListeDesTemoignages(info,0);
 					excelData = ListeExportExcel.listeDesTemoignages(info,listeTemoignages,0);
+					carteData = calculeCarteTemoignages(info,0);
+					carteImage = new Carte(carteData);
+					carteImage.writeToDisk();
 					message = buildMessage("Carte par espèces", info);
+
 				break;
 
 				case 20 : // Carte 20x20 par espèce
@@ -372,6 +551,13 @@ public class Calculs extends Controller {
 					// carte du nombre de témoignages par mailles
 					ResultSet listeTemoignagesUTM20 = calculeListeDesTemoignages(info,20);
 					excelData = ListeExportExcel.listeDesTemoignages(info,listeTemoignagesUTM20,20);
+					/*
+					NE FONCTIONNE PAS POUR L'INSTANT (pas de fichier carte.png représentant les mailles 20x20)
+					message = buildMessage("Carte 20x20 par espèces", info);
+					carteData = calculeCarteTemoignages(info,20);
+					carteImage = new Carte(carteData);
+					carteImage.writeToDisk();
+					*/
 					message = buildMessage("Carte 20x20 par espèces", info);
 
 				break;
@@ -381,7 +567,11 @@ public class Calculs extends Controller {
 					// sous-groupe choisi, carte du nombre d'espèces témoignées par maille
 					ResultSet sommeEspeces = calculeSommeEspeces(info,0);
 					excelData = ListeExportExcel.sommeEspeces(info,sommeEspeces,0);
+					carteData = calculeCarteSommeEspeces(info,0);
+					carteImage = new Carte(carteData);
+					carteImage.writeToDisk();
 					message = buildMessage("Carte somme", info);
+					
 				break;
 
 				case 40 : // Carte somme 20x20
@@ -390,6 +580,12 @@ public class Calculs extends Controller {
 					// UTM 20km X 20km
 					ResultSet sommeEspecesUTM20 = calculeSommeEspeces(info,20);
 					excelData = ListeExportExcel.sommeEspeces(info,sommeEspecesUTM20,20);
+					/*
+					NE FONCTIONNE PAS POUR L'INSTANT (pas de fichier carte.png représentant les mailles 20x20)
+					carteData = calculeCarteSommeEspeces(info,20);
+					carteImage = new Carte(carteData);
+					carteImage.writeToDisk();
+					*/
 					message = buildMessage("Carte somme 20x20", info);
 				break;
 

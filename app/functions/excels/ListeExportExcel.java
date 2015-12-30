@@ -259,6 +259,7 @@ public class ListeExportExcel extends Excel{
 				if ((lastMaille == null) || (! lastMaille.equals(maille))) {
 					row.createCell(1).setCellValue(maille);
 					if (tailleUTM != 20) {
+						row.createCell(2).setCellValue(listeDesTemoignages.getString("Maille20x20"));
 						row.createCell(3).setCellValue(listeDesTemoignages.getString("Maille50x50"));
 						row.createCell(4).setCellValue(listeDesTemoignages.getString("Maille100x100"));
 					}

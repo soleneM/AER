@@ -24,7 +24,7 @@ public class SommeEspeces {
 	 * @throws ParseException
 	 * @throws SQLException
 	 */
-	private static ResultSet calculeSommeEspeces(Map<String,String> info, int tailleUTM) throws ParseException, SQLException {
+	public static ResultSet calculeSommeEspeces(Map<String,String> info, int tailleUTM) throws ParseException, SQLException {
 		DataSource ds = DB.getDataSource();
 		Connection connection = ds.getConnection();
 		PreparedStatement sommeEspeces;
@@ -41,7 +41,7 @@ public class SommeEspeces {
 				statement += " utms.utm";
 			break;
 		}
-		statement += ", COUNT(espece.espece_id)"
+		statement += ", COUNT(espece.espece_id) as nbespeces"
 				+ " FROM groupe " 
 				+ " INNER JOIN espece_is_in_groupement_local ON (groupe.groupe_id = espece_is_in_groupement_local.groupe_groupe_id)"
 				+ " INNER JOIN espece ON (espece_is_in_groupement_local.espece_espece_id = espece.espece_id)"
