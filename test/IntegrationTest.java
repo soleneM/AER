@@ -1,0 +1,254 @@
+/*********************************************************************************
+ * 
+ *   Copyright 2014 BOUSSEJRA Malik Olivier, HALDEBIQUE Geoffroy, ROYER Johan
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ *   
+ ********************************************************************************/
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.naming.NamingException;
+import javax.persistence.PersistenceException;
+
+import models.Commune;
+/*import models.Espece;
+import models.Famille;
+import models.Fiche;
+import models.Groupe;
+import models.Membre;
+import models.Ordre;
+import models.SousFamille;
+import models.StadeSexe;
+import models.SuperFamille;*/
+
+import org.junit.*;
+
+import com.avaje.ebean.Ebean;
+import com.avaje.ebean.SqlUpdate;
+
+import controllers.ajax.Listes;
+import functions.UTMtoXY;
+import functions.cartes.Carte;
+import functions.credentials.Credentials;
+import functions.excels.Excel;
+import functions.excels.exports.TemoinsParPeriodeExcel;
+import functions.mail.VerifierMail;
+import play.mvc.*;
+import play.test.*;
+import play.libs.F.*;
+import static play.test.Helpers.*;
+import static org.fest.assertions.Assertions.*;
+import static org.fluentlenium.core.filter.FilterConstructor.*;
+
+public class IntegrationTest {
+
+	Map<String, Object> databaseConfiguration = new HashMap<String, Object>();
+
+    /**
+     * add your integration test here
+     */
+    @Test
+    public void test() {
+    	databaseConfiguration.put("db.default.url", "jdbc:mysql://localhost:3306/aer");
+        running(testServer(3333, fakeApplication(databaseConfiguration)), HTMLUNIT, new Callback<TestBrowser>() {
+            public void invoke(TestBrowser browser) throws IOException{
+
+            	long i = Calendar.getInstance().getTimeInMillis();
+            	
+            	//Teste que les bons départements sont trouvés par l'application
+                //System.out.println(models.Departement.findDepartementsAER());
+                
+                //ajouteEspece();
+                
+                //Credentials.creeHashEtMotDePassePourToutLeMonde();
+            	
+            	//listeMembres();
+            	
+            	//listeEspecesAvecSousGroupeEtGroupe();
+            	
+            	//VerifierMail.envoyerMailDeVerification(Membre.find.all().get(0));
+            	
+            	//affichePremieresSystematiques();
+            	
+            	//gererBaseDeDonneesInsectes.render(Espece.findAll(), SousFamille.findSousFamillesExistantes(), Famille.findAll(), SuperFamille.findSuperFamillesExistantes(), Ordre.findAll(), SousGroupe.findAll(), Groupe.findAll());
+            	//gererBaseDeDonneesInsectes.render(Espece.findAll(), SousFamille.findSousFamillesExistantesTriees(), Famille.findAllTriees(), SuperFamille.findSuperFamillesExistantesTriees(), Ordre.findAllTries(), SousGroupe.findAll(), Groupe.findAll());
+            	
+            	//excelTests();
+            	
+            	//System.out.println(StadeSexe.getStadesImagos());
+            	
+            	//testDoublonTemoin();
+            	
+            	//testDoublonCommune();
+            	
+            	//testUTMtoXY();
+            	
+            	//metAJourNomAERCommunes();
+            	
+            	excelCartes();
+            	
+            	long j = Calendar.getInstance().getTimeInMillis();
+            	System.out.println("Calculé en "+(j-i)+" ms");
+            }
+        });
+    }
+    
+  /*
+    private void ajouteEspece(){
+    	Espece e = new Espece("Rasgus pipus","Malik Olivier Boussejra, 2014",54,"GA!");
+    	System.out.println(e);
+    	try {
+			e.ajouterNouvelleEspece(true, 1);
+		} catch (PersistenceException | NamingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    	Espece es = new Espece("Rasgus pipus2","Malik Olivier Boussejra, 2014",54,"GA2!");
+    	System.out.println(es);
+    	try {
+			es.ajouterNouvelleEspece(true, 1);
+		} catch (PersistenceException | NamingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    	Espece esp = new Espece("Rasgus pipus3","Malik Olivier Boussejra, 2014",54,"GA3!");
+    	System.out.println(esp);
+    	try {
+			esp.ajouterNouvelleEspece(false, 1);
+		} catch (PersistenceException | NamingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    	Espece espe = new Espece("Rasgus pipus4","Malik Olivier Boussejra, 2014",54,"GA4!");
+    	System.out.println(espe);
+    	try {
+			espe.ajouterNouvelleEspece(false, 1);
+		} catch (PersistenceException | NamingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    }
+
+    private void listeMembres() throws IOException{
+    	FileWriter fw = new FileWriter("listeMembres.js");
+    	fw.append(Listes.listeMembres());
+    	fw.flush();
+    	fw.close();
+    }
+    
+    private void listeEspecesAvecSousGroupeEtGroupe() throws IOException{
+    	FileWriter fw = new FileWriter("listeEspeces");
+    	List<Espece> especes = Espece.find.where().orderBy("espece_systematique").findList();
+    	Groupe sg = null;
+    	Fiche f = null;
+		SimpleDateFormat date_format = new SimpleDateFormat("dd/MM/yyyy");
+//    	for(Espece e : especes){
+//    		sg = e.getGroupesPeres().get(0);
+//    		f = e.getPlusVieuxTemoignage();
+//    		if(f==null)
+//        		fw.append(e+","+sg+","+sg.sous_groupe_groupe+","+null+"\n");
+//    		else
+//    			fw.append(e+","+sg+","+sg.sous_groupe_groupe+","+date_format.format(f.fiche_date.getTime())+"\n");
+//    	}
+    	fw.flush();
+    	fw.close();
+    }
+
+	private void affichePremieresSystematiques() {
+		for(Ordre ordre : Ordre.findAll()){
+    		System.out.println(ordre.getSystematiquePremiereEspeceDansThis());
+    	}
+    	for(SuperFamille superfam : SuperFamille.findSuperFamillesExistantes()){
+    		System.out.println(superfam.getSystematiquePremiereEspeceDansThis());
+    	}
+    	for(Famille fam : Famille.findAll()){
+    		System.out.println(fam.getSystematiquePremiereEspeceDansThis());
+    	}
+    	for(SousFamille sousfam : SousFamille.findSousFamillesExistantes()){
+    		System.out.println(sousfam.getSystematiquePremiereEspeceDansThis());
+    	}
+	}
+	
+	private void excelTests() throws IOException{
+		new TemoinsParPeriodeExcel(null,null).writeToDisk();
+	}
+	
+	private void testDoublonTemoin(){
+		List<Membre> membres = Membre.find.all();
+		for(Membre m : membres){
+			try{
+				Membre.find.where().eq("membre_nom", m.membre_nom).findUnique();
+			}catch(PersistenceException e){
+				System.out.println(m.membre_nom);
+			}
+		}
+	}
+	
+	private void testDoublonCommune(){
+		List<Commune> communes = Commune.find.all();
+		for(Commune c : communes){
+			try{
+				Commune.find.where().eq("ville_nom_reel", c.ville_nom_reel).findUnique();
+			}catch(PersistenceException e){
+				System.out.println(c.ville_nom_reel);
+			}
+		}
+	}
+	
+
+	private void testUTMtoXY() throws NumberFormatException {
+    	int[] xy = UTMtoXY.convert10x10("WT25");
+    	System.out.println(xy[0]);
+    	System.out.println(xy[1]);		
+	}*/
+
+	/**
+	 * Pour utiliser les noms de commune dicté par AER : c'est-à-dire
+	 * en minuscule avec des articles.
+	 */
+	private void metAJourNomAERCommunes() {
+		for(Commune c : Commune.find.all()){
+			if(c.ville_nom.startsWith("LA "))
+				c.ville_nom_aer="La "+c.ville_nom_reel;
+			else if(c.ville_nom.startsWith("LE "))
+				c.ville_nom_aer="Le "+c.ville_nom_reel;
+			else if(c.ville_nom.startsWith("LES "))
+				c.ville_nom_aer="Les "+c.ville_nom_reel;
+			else if(c.ville_nom.startsWith("L'"))
+				c.ville_nom_aer="L'"+c.ville_nom_reel;
+			else
+				c.ville_nom_aer=c.ville_nom_reel;
+			SqlUpdate update = Ebean.createSqlUpdate("UPDATE commune SET ville_nom_aer=:aer WHERE ville_id=:id")
+					.setParameter("aer", c.ville_nom_aer)
+					.setParameter("id", c.ville_id);
+			update.execute();
+		}
+	}
+	
+	private void excelCartes() throws IOException {
+		Carte carte = new Carte();
+		carte.allumeRouge(2, 3);
+		carte.ecrit(2, 3, "0");
+		carte.ecrit(10, 12, "51");
+		carte.writeToDisk();
+	}
+}

@@ -1,0 +1,5 @@
+if (test -e "RUNNING_PID"); then
+	echo "Le programme est déjà lancé"
+else
+	play "start 9000"
+fi

@@ -1,0 +1,10 @@
+if (test -e "RUNNING_PID"); then
+	echo -n "kill -9 " > tostop
+	cat RUNNING_PID >> tostop
+	chmod 777 tostop
+	./tostop
+	rm RUNNING_PID
+	rm tostop
+else
+	echo "Pas de fichier RUNNING_PID"
+fi
